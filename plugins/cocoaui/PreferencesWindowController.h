@@ -94,9 +94,7 @@
 - (IBAction)dspLoadAction:(id)sender;
 
 @property (unsafe_unretained) IBOutlet NSTableView *dspList;
-
-@property (weak) IBOutlet NSView *dspPresetSelectorContainer;
-
+@property (unsafe_unretained) IBOutlet NSComboBox *dspPresets;
 @property (strong) IBOutlet DSPPresetListDataSource *dspPresetListDataSource;
 
 // GUI misc properties

@@ -41,7 +41,6 @@
 #endif
 
 //#define USE_STDIO
-#define USE_BUFFERING
 
 #ifndef USE_STDIO
 #define BUFSIZE 1024
@@ -55,11 +54,9 @@ typedef struct {
 #else
     int stream;
     int64_t offs;
-#ifdef USE_BUFFERING
     uint8_t buffer[BUFSIZE];
     uint8_t *bufptr;
     int bufremaining;
-#endif
     int have_size;
     size_t size;
 #endif
@@ -102,7 +99,6 @@ stdio_close (DB_FILE *stream) {
 }
 
 #ifndef USE_STDIO
-#ifdef USE_BUFFERING
 static int
 fillbuffer (STDIO_FILE *f) {
     assert (f->bufremaining >= 0);
@@ -117,7 +113,6 @@ fillbuffer (STDIO_FILE *f) {
     return f->bufremaining;
 }
 #endif
-#endif
 
 static size_t
 stdio_read (void *ptr, size_t size, size_t nmemb, DB_FILE *stream) {
@@ -127,9 +122,7 @@ stdio_read (void *ptr, size_t size, size_t nmemb, DB_FILE *stream) {
     return fread (ptr, size, nmemb, ((STDIO_FILE*)stream)->stream);
 #else
     STDIO_FILE *f = (STDIO_FILE*)stream;
-
     size_t nb = size * nmemb;
-#ifdef USE_BUFFERING
     while (nb > 0) {
         if (fillbuffer (f) <= 0) {
             break;
@@ -175,9 +168,7 @@ stdio_seek (DB_FILE *stream, int64_t offset, int whence) {
     }
 //    printf ("lseek res: %lld (%lld, %d, prev=%lld)\n", res, offset, whence,  ((STDIO_FILE*)stream)->offs);
     ((STDIO_FILE*)stream)->offs = res;
-#ifdef USE_BUFFERING
     ((STDIO_FILE*)stream)->bufremaining = 0;
-#endif
 #endif
     return 0;
 }
@@ -216,9 +207,7 @@ stdio_getlength (DB_FILE *stream) {
     if (!f->have_size) {
         int64_t size = lseek64 (f->stream, 0, SEEK_END);
         lseek64 (f->stream, f->offs, SEEK_SET);
-#ifdef USE_BUFFERING
         f->bufremaining = 0;
-#endif
         f->have_size = 1;
         f->size = size;
     }

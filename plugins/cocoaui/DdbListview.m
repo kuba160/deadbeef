@@ -140,7 +140,7 @@ extern DB_functions_t *deadbeef;
 
 #define BLANK_GROUP_SUBDIVISION 100
 
-int headerheight = 23;
+int headerheight = 17;
 int rowheight = 19;
 int grouptitleheight = 22;
 
@@ -155,7 +155,6 @@ int grouptitleheight = 22;
     BOOL _prepare;
     int _sortOrder;
     DdbListviewCol_t _sortColumn;
-    NSColor *_separatorColor;
 }
 - (void)setListView:(DdbListview *)lv;
 @end
@@ -165,10 +164,6 @@ int grouptitleheight = 22;
     self = [super initWithFrame:rect];
     _dragging = -1;
     _sizing = -1;
-    _separatorColor = [[NSColor headerColor] colorWithAlphaComponent:0.5];
-    NSTrackingAreaOptions options = NSTrackingInVisibleRect | NSTrackingCursorUpdate | NSTrackingMouseMoved | NSTrackingActiveInActiveApp;
-    NSTrackingArea *area = [[NSTrackingArea alloc] initWithRect:self.bounds options:options owner:self userInfo:nil];
-    [self addTrackingArea:area];
     return self;
 }
 
@@ -179,13 +174,25 @@ int grouptitleheight = 22;
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect:dirtyRect];
 
+//    [self updateCursorRects];
+
     NSScrollView *sv = [listview.contentView enclosingScrollView];
     NSRect rc = [sv documentVisibleRect];
 
     NSRect rect = [self bounds];
-
-    [_separatorColor set];
+    [[NSColor lightGrayColor] set];
+    [NSBezierPath fillRect:NSMakeRect(rect.origin.x, rect.origin.y+rect.size.height-1,rect.size.width,1)];
     [NSBezierPath fillRect:NSMakeRect(rect.origin.x, 0,rect.size.width,1)];
+
+    NSGradient *gr = [[NSGradient alloc] initWithColorsAndLocations:
+                      [NSColor whiteColor], 0.f,
+                      [NSColor colorWithCalibratedWhite:0.9f alpha:1.f], 0.55f,
+                      [NSColor colorWithCalibratedWhite:0.88f alpha:1.f], 0.55f,
+                      [NSColor colorWithCalibratedWhite:0.88f alpha:1.f], 0.89f,
+                      [NSColor colorWithCalibratedWhite:0.9f alpha:1.f], 0.90f,
+                      [NSColor whiteColor], 1.f, nil];
+
+    [gr drawInRect:NSMakeRect(rect.origin.x, rect.origin.y+1,rect.size.width,rect.size.height-2) angle:270];
 
     id <DdbListviewDelegate> delegate = [listview delegate];
 
@@ -193,14 +200,11 @@ int grouptitleheight = 22;
     for (DdbListviewCol_t col = [delegate firstColumn]; col != [delegate invalidColumn]; col = [delegate nextColumn:col]) {
         int w = [delegate columnWidth:col];
 
-        NSRect colRect = NSMakeRect(x, 0, w, [self frame].size.height);
         if (_dragging != col) {
-            if (CGRectIntersectsRect(dirtyRect, colRect)) {
-                [delegate drawColumnHeader:col inRect:colRect];
+            if (CGRectIntersectsRect(dirtyRect, NSMakeRect(x, 0, w, [self frame].size.height))) {
+                [delegate drawColumnHeader:col inRect:NSMakeRect(x, 0, w, [self frame].size.height)];
             }
         }
-        [_separatorColor set];
-        [NSBezierPath fillRect:NSMakeRect(colRect.origin.x + colRect.size.width - 1, colRect.origin.y+3,1,colRect.size.height-6)];
         x += w;
     }
 
@@ -213,13 +217,8 @@ int grouptitleheight = 22;
             cx = _drag_col_pos + _drag_delta;
             NSRect colRect = NSMakeRect(cx, 1, w, [self frame].size.height-2);
             if (CGRectIntersectsRect(dirtyRect, colRect)) {
-                [[[NSColor whiteColor] colorWithAlphaComponent:0.4] set];
-                [NSBezierPath fillRect:colRect];
-
+                [gr drawInRect:colRect angle:90];
                 [delegate drawColumnHeader:col inRect:colRect];
-                [_separatorColor set];
-                [NSBezierPath fillRect:NSMakeRect(colRect.origin.x, colRect.origin.y,1,colRect.size.height)];
-                [NSBezierPath fillRect:NSMakeRect(colRect.origin.x + colRect.size.width - 1, colRect.origin.y,1,colRect.size.height)];
             }
         }
         x += w;
@@ -227,34 +226,23 @@ int grouptitleheight = 22;
 
 }
 
-- (void)mouseMoved:(NSEvent *)event {
-    [self cursorUpdate:event];
-}
+- (void)updateCursorRects {
+    [self resetCursorRects];
 
-- (void)cursorUpdate:(NSEvent *)event
-{
-    id <DdbListviewDelegate> delegate = [listview delegate];
     NSScrollView *sv = [listview.contentView enclosingScrollView];
     NSRect rc = [sv documentVisibleRect];
+
     int x = -rc.origin.x;
-    int idx = 0;
-    NSPoint pt = [self convertPoint:[event locationInWindow] fromView:self];
+    id <DdbListviewDelegate> delegate = [listview delegate];
+
     for (DdbListviewCol_t col = [delegate firstColumn]; col != [delegate invalidColumn]; col = [delegate nextColumn:col]) {
         int w = [delegate columnWidth:col];
-        x += w;
-        if (fabs(pt.x-x) < 5) {
-            if (idx == 0) {
-                [[NSCursor resizeRightCursor] set];
-            }
-            else {
-                [[NSCursor resizeLeftRightCursor] set];
-            }
-            return;
-        }
-        idx++;
-    }
-    [[NSCursor arrowCursor] set];
 
+        x += w;
+
+        [self addCursorRect:NSMakeRect(x-3, 0, 6, [self bounds].size.height) cursor:[NSCursor resizeLeftRightCursor]];
+
+    }
 }
 
 - (void)mouseDown:(NSEvent *)theEvent {
@@ -270,11 +258,10 @@ int grouptitleheight = 22;
     _sizing = [delegate invalidColumn];
     _prepare = YES;
 
-    int idx = 0;
     for (DdbListviewCol_t col = [delegate firstColumn]; col != [delegate invalidColumn]; col = [delegate nextColumn:col]) {
         int w = [delegate columnWidth:col];
 
-        if ((idx == 0 || convPt.x - x > 5) && convPt.x < x + w - 5) {
+        if (CGRectContainsPoint(NSMakeRect(x+3, 0, w-6, [self bounds].size.height), convPt)) {
             _drag_delta = 0;
             _dragging = col;
             _dragPt = convPt;
@@ -285,7 +272,7 @@ int grouptitleheight = 22;
 
         x += w;
 
-        if (fabs(convPt.x - x) < 5) {
+        if (CGRectContainsPoint (NSMakeRect(x-3, 0, 6, [self bounds].size.height), convPt)) {
             _sizing = col;
             _dragPt = convPt;
             _orig_col_width = [delegate columnWidth:col];
@@ -323,7 +310,6 @@ int grouptitleheight = 22;
     }
     _dragging = [delegate invalidColumn];
     _sizing = [delegate invalidColumn];
-    [self setNeedsDisplay:YES];
 }
 
 - (void)mouseDragged:(NSEvent *)theEvent {
@@ -346,8 +332,7 @@ int grouptitleheight = 22;
 
             [delegate setColumnWidth:w forColumn:_sizing];
             [listview updateContentFrame];
-            [listview.contentView setNeedsDisplay:YES];
-            [self setNeedsDisplay:YES];
+            [listview setNeedsDisplay:YES];
 
             rc = [sv documentVisibleRect];
             scroll += rc.origin.x;
@@ -975,8 +960,7 @@ int grouptitleheight = 22;
 }
 
 - (void)windowDidBecomeKey:(id)sender {
-    [self.headerView setNeedsDisplay:YES];
-    [self.contentView setNeedsDisplay:YES];
+    [self setNeedsDisplay:YES];
 }
 
 
@@ -1115,7 +1099,7 @@ int grouptitleheight = 22;
 
 - (void)reloadData {
     [self initGroups];
-    [self.contentView setNeedsDisplay:YES];
+    [self setNeedsDisplay:YES];
 }
 
 - (int)pickPoint:(int)y group:(DdbListviewGroup_t **)group groupIndex:(int *)group_idx index:(int *)global_idx {

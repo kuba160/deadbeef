@@ -24,7 +24,6 @@
 #import "PreferencesWindowController.h"
 #import "DSPChainDataSource.h"
 #import "DSPPresetListDataSource.h"
-#import "deadbeef-Swift.h"
 #include "deadbeef.h"
 #include "pluginsettings.h"
 
@@ -33,7 +32,6 @@ extern DB_functions_t *deadbeef;
 @interface PreferencesWindowController () {
     settings_data_t _settingsData;
     DSPChainDataSource *_dspChainDataSource;
-    DSPPresetController *_dspPresetController;
 }
 
 @end
@@ -49,11 +47,6 @@ extern DB_functions_t *deadbeef;
 
     [_toolbar setDelegate:(id<NSToolbarDelegate>)self];
     [_toolbar setSelectedItemIdentifier:@"Playback"];
-
-    NSError *error;
-    _dspPresetController = [DSPPresetController createWithContext:@"main" error:&error];
-
-    [_dspPresetController.presetMgr createSelectorUIWithContainer:_dspPresetSelectorContainer];
 
     [self initPluginList];
 

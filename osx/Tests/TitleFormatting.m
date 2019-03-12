@@ -36,7 +36,6 @@ static int fake_out_state (void) {
 }
 
 static DB_output_t fake_out = {
-    .plugin.name = "fake_out",
     .state = fake_out_state,
 };
 
@@ -51,6 +50,8 @@ static DB_output_t fake_out = {
 
 - (void)setUp {
     [super setUp];
+
+    pl_init ();
 
     it = pl_item_alloc_init ("testfile.flac", "stdflac");
 
@@ -67,6 +68,7 @@ static DB_output_t fake_out = {
 - (void)tearDown {
     streamer_set_playing_track (NULL);
     pl_item_unref (it);
+    pl_free ();
     ctx.plt = NULL;
 
     [super tearDown];
