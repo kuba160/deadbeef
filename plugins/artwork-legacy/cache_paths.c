@@ -36,6 +36,25 @@
 extern DB_functions_t *deadbeef;
 #define trace(...) { deadbeef->log (__VA_ARGS__); }
 
+// Maybe put this in utils?
+#ifdef __MINGW32__
+#define canonicalize_nix(str) replace_char(str, '\\', '/')
+#define canonicalize_sys(str) replace_char(str, '/', '\\')
+#else
+#define canonicalize_nix(str)
+#define canonicalize_sys(str)
+#endif
+
+static void
+replace_char(char* str, char c, char r) {
+    while (*str != '\0') {
+        if(*str == c) {
+            *str = r;
+        }
+        ++str;
+    }
+}
+
 // esc_char is needed to prevent using file path separators,
 // e.g. to avoid writing arbitrary files using "../../../filename"
 static char
@@ -54,26 +73,27 @@ esc_char (char c) {
 
 int
 make_cache_root_path (char *path, const size_t size) {
-    const char *xdg_cache = getenv (CACHEDIR);
-    #ifdef __MINGW32__
-    // replace backslashes with normal slashes
-    char xdg_cache_conv[strlen(xdg_cache)+1];
-    if (strchr(xdg_cache, '\\')) {
-        trace ("plt_insert_file_int: backslash(es) detected: %s\n", xdg_cache);
-        strcpy (xdg_cache_conv, xdg_cache);
-        char *slash_p = xdg_cache_conv;
-        while (slash_p = strchr(slash_p, '\\')) {
-            *slash_p = '/';
-            slash_p++;
-        }
-        xdg_cache = xdg_cache_conv;
-    }
-    #endif
-    const char *cache_root = xdg_cache ? xdg_cache : getenv (HOMEDIR);
-    if (snprintf (path, size, xdg_cache ? "%s/deadbeef/" : "%s/.cache/deadbeef/", cache_root) >= size) {
-        trace ("Cache root path truncated at %d bytes\n", (int)size);
+    const char usr_dir[] = "/.cache/deadbeef/";
+    const char sys_dir[] = "/deadbeef/";
+    const char *base_dir = getenv (CACHEDIR);
+    const char *sub_dir  = base_dir ? sys_dir : usr_dir;
+    size_t      sub_len  = (base_dir ? sizeof(sys_dir): sizeof(usr_dir)) - 1;
+
+    memset(path, '\0', size);
+    base_dir = base_dir ? base_dir : getenv (HOMEDIR);
+    if (!base_dir) {
+        trace ("Artwork File Cache: Can't find a suitable cache root directory in the environment variables!\n");
         return -1;
     }
+
+    size_t base_len = strlen(base_dir);
+    if ((base_len + sub_len) >= size) {
+        trace ("Artwork File Cache: Cache root directory longer than %d bytes\n", (int)size - 1);
+        return -1;
+    }
+    memcpy(path, base_dir, base_len);
+    memcpy(path + base_len, sub_dir, sub_len);
+    canonicalize_nix(path);
     return 0;
 }
 
