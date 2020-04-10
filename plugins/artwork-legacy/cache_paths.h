@@ -21,14 +21,19 @@
 
     3. This notice may not be removed or altered from any source distribution.
 */
-#ifndef __ARTWORK_CACHE_H
-#define __ARTWORK_CACHE_H
+#ifndef __ARTWORK_CACHE_PATHS_H
+#define __ARTWORK_CACHE_PATHS_H
 
-void cache_lock(void);
-void cache_unlock(void);
-void remove_cache_item(const char *entry_path, const char *subdir_path, const char *subdir_name, const char *entry_name);
-void cache_configchanged(void);
-void start_cache_cleaner(void);
-void stop_cache_cleaner(void);
+int
+make_cache_root_path (char *path, const size_t size);
 
-#endif /*__ARTWORK_CACHE_H*/
+int
+make_cache_dir_path (char *path, int size, const char *artist, int img_size);
+
+int
+make_cache_path2 (char *path, int size, const char *fname, const char *album, const char *artist, int img_size);
+
+void
+make_cache_path (char *path, int size, const char *album, const char *artist, int img_size);
+
+#endif /*__ARTWORK_CACHE_PATHS_H*/

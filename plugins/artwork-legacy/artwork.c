@@ -59,6 +59,7 @@
 #include "albumartorg.h"
 #include "wos.h"
 #include "cache.h"
+#include "cache_paths.h"
 #include "artwork.h"
 #include "mp4ff.h"
 
@@ -870,113 +871,6 @@ scale_file (const char *in, const char *out, int img_size)
     cache_unlock ();
     return err;
 #endif
-}
-
-// esc_char is needed to prevent using file path separators,
-// e.g. to avoid writing arbitrary files using "../../../filename"
-static char
-esc_char (char c) {
-#ifndef WIN32
-    if (c == '/') {
-        return '\\';
-    }
-#else
-    if (c == '/' || c == ':') {
-        return '_';
-    }
-#endif
-    return c;
-}
-
-static int
-make_cache_dir_path (char *path, int size, const char *artist, int img_size) {
-    char esc_artist[NAME_MAX+1];
-    if (artist) {
-        size_t i = 0;
-        while (artist[i] && i < NAME_MAX) {
-            esc_artist[i] = esc_char (artist[i]);
-            i++;
-        }
-        esc_artist[i] = '\0';
-    }
-    else {
-        strcpy (esc_artist, "Unknown artist");
-    }
-
-    if (make_cache_root_path (path, size) < 0) {
-        return -1;
-    }
-
-    const size_t size_left = size - strlen (path);
-    int path_length;
-    if (img_size == -1) {
-        path_length = snprintf (path+strlen (path), size_left, "covers/%s/", esc_artist);
-    }
-    else {
-        path_length = snprintf (path+strlen (path), size_left, "covers-%d/%s/", img_size, esc_artist);
-    }
-    if (path_length >= size_left) {
-        trace ("Cache path truncated at %d bytes\n", size);
-        return -1;
-    }
-
-    return 0;
-}
-
-static int
-make_cache_path2 (char *path, int size, const char *fname, const char *album, const char *artist, int img_size) {
-    path[0] = '\0';
-
-    if (!album || !*album) {
-        if (fname) {
-            album = fname;
-        }
-        else if (artist && *artist) {
-            album = artist;
-        }
-        else {
-            trace ("not possible to get any unique album name\n");
-            return -1;
-        }
-    }
-    if (!artist || !*artist) {
-        artist = "Unknown artist";
-    }
-
-    #ifdef __MINGW32__
-    if (make_cache_dir_path (path, size, artist, img_size)) {
-        return -1;
-    }
-    #else
-    if (make_cache_dir_path (path, size-NAME_MAX, artist, img_size)) {
-        return -1;
-    }
-    #endif
-
-    int max_album_chars = min (NAME_MAX, size - strlen (path)) - sizeof ("1.jpg.part");
-    #ifdef __MINGW32__
-    // override char limit todo
-    max_album_chars = 250;
-    #endif
-    if (max_album_chars <= 0) {
-        trace ("Path buffer not long enough for %s and filename\n", path);
-        return -1;
-    }
-
-    char esc_album[max_album_chars+1];
-    const char *palbum = strlen (album) > max_album_chars ? album+strlen (album)-max_album_chars : album;
-    size_t i = 0;
-    do {
-        esc_album[i] = esc_char (palbum[i]);
-    } while (palbum[i++]);
-
-    sprintf (path+strlen (path), "%s%s", esc_album, ".jpg");
-    return 0;
-}
-
-static void
-make_cache_path (char *path, int size, const char *album, const char *artist, int img_size) {
-    make_cache_path2 (path, size, NULL, album, artist, img_size);
 }
 
 static const char *
