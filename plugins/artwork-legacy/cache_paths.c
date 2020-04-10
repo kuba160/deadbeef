@@ -127,7 +127,7 @@ sanitize_name_for_file_system (const char* name, char* clean, size_t clean_capac
     const char* name_end = name;
     // An other possibility is escape to hex, but the old esc_char function just used `_`
     while (*name_end != '\0' && (length + 1) < clean_capacity) {
-        char c = *name_end;
+        unsigned char c = *name_end;
         if (isspace (c)) {
             c = ' ';
         }
