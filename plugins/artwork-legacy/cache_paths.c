@@ -29,6 +29,7 @@
 #include <stdint.h>
 
 #include "cache_paths.h"
+#include "hash.h"
 #include "../../common.h" // For CACHEDIR & HOMEDIR
 
 // Get rid of redefinition warnings.
@@ -260,15 +261,22 @@ int
 make_cache_path2 (char *path, int size, const char *fname, const char *album, const char *artist, int img_size) {
     path[0] = '\0';
 
+    static const char null_chr = '\0';
+    // The logic for the album name check implies this can be NULL just easier to make sure in that case
+    // it's an empty string, instead having multiple checks all over the place.
+    if (!fname) {
+        fname = &null_chr;
+    }
+
     if (!album || !*album) {
-        if (fname) {
+        if (*fname) {
             album = fname;
         }
         else if (artist && *artist) {
             album = artist;
         }
         else {
-            trace ("not possible to get any unique album name\n");
+            trace ("Artwork File Cache: Not possible to get any unique album name.\n");
             return -1;
         }
     }
@@ -276,6 +284,20 @@ make_cache_path2 (char *path, int size, const char *fname, const char *album, co
         artist = "Unknown artist";
     }
 
+    // We just want to hash the path without the file name
+    size_t len = strlen(fname);
+    const char* path_end = strrchr (fname, '/');
+    if(path_end) {
+        len = path_end - fname + 1;
+    }
+    uint64_t hash = hash_bytes (fname, len);
+    // add album name with the path hash
+    hash = hash_string_continue (hash, album);
+
+    char hash_str[17] = { 0 };
+    snprintf(hash_str, 17, "%08x%08x", hash >> 32, hash & 0xffffffff);
+
+    album = hash_str;
     // If buffer larger than max path size limit it.
     if(size >= NAME_MAX) {
         size = NAME_MAX - 1;
@@ -302,12 +324,9 @@ make_cache_path2 (char *path, int size, const char *fname, const char *album, co
         return -1;
     }
 
-    for (size_t i = 0; i < album_len; i++) {
-        char c = esc_char (album[i]);
-        (path + path_len)[i] = c;
-    }
 
-    strcpy ((path + path_len + album_len), ".jpg");
+    strcpy (path + path_len, album);
+    strcpy (path + path_len + album_len, ".jpg");
     return 0;
 }
 
