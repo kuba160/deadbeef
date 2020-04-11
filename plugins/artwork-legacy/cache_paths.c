@@ -162,7 +162,8 @@ sanitize_name_for_file_system (const char* name, char* clean, size_t clean_capac
         clean[0] = '_';
     }
 
-    // Adjust length to trim trailing spaces
+    // Adjust length to trim trailing spaces, again a windows only thing, but spaces at the end
+    // and begining of strings can be a pain to work with from a commandline.
     while (length > 0 && isspace (*(clean + length - 1))) {
         length--;
     }
@@ -275,34 +276,38 @@ make_cache_path2 (char *path, int size, const char *fname, const char *album, co
         artist = "Unknown artist";
     }
 
-    #ifdef __MINGW32__
+    // If buffer larger than max path size limit it.
+    if(size >= NAME_MAX) {
+        size = NAME_MAX - 1;
+    }
+    memset (path, '\0', size);
+
+    if(size < sizeof ("1.jpg.part")) {
+        trace("Artwork File Cache: Path buffer way too small!\n");
+        return -1;
+    }
+    // Temp file extension or something just make sure there is room for it
+    size -= sizeof ("1.jpg.part");
+
     if (make_cache_dir_path (path, size, artist, img_size)) {
         return -1;
     }
-    #else
-    if (make_cache_dir_path (path, size-NAME_MAX, artist, img_size)) {
-        return -1;
-    }
-    #endif
 
-    int max_album_chars = min (NAME_MAX, size - strlen (path)) - sizeof ("1.jpg.part");
-    #ifdef __MINGW32__
-    // override char limit todo
-    max_album_chars = 250;
-    #endif
-    if (max_album_chars <= 0) {
-        trace ("Path buffer not long enough for %s and filename\n", path);
+    size_t path_len  = strlen (path);
+    size_t album_len = strlen (album);
+    size -= path_len; // reduce size
+    // also include extension in size
+    if (album_len + 4 > size) {
+        trace ("Artwork File Cache: Path buffer not large enough for %s and filename\n", path);
         return -1;
     }
 
-    char esc_album[max_album_chars+1];
-    const char *palbum = strlen (album) > max_album_chars ? album+strlen (album)-max_album_chars : album;
-    size_t i = 0;
-    do {
-        esc_album[i] = esc_char (palbum[i]);
-    } while (palbum[i++]);
+    for (size_t i = 0; i < album_len; i++) {
+        char c = esc_char (album[i]);
+        (path + path_len)[i] = c;
+    }
 
-    sprintf (path+strlen (path), "%s%s", esc_album, ".jpg");
+    strcpy ((path + path_len + album_len), ".jpg");
     return 0;
 }
 
