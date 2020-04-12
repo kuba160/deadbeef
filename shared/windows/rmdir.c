@@ -1,6 +1,6 @@
 
 /*
-    shared/windows/mkdir.c
+    shared/windows/rmdir.c
     Copyright (C) 2020 Keith Cancel <admin@keith.pro>
 
     This software is provided 'as-is', without any express or implied
