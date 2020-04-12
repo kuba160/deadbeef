@@ -24,7 +24,7 @@
 #include <windows.h>
 #include <wchar.h>
 
-typedef	unsigned short mode_t;
+typedef unsigned short mode_t;
 
 // TODO: Maybe also take into account mode.
 int
