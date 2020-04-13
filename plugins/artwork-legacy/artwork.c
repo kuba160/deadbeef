@@ -1081,6 +1081,7 @@ make_cache_path2 (char *path, int size, const char *fname, const char *album, co
     }
 
     size -= strlen (path);
+    size -= 4; // File extension .jpg
     if (size < 1) {
         trace ("Path buffer not long enough for %s and filename\n", path);
         return -1;
