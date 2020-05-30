@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../../deadbeef.h"
+#include "../../strdupa.h"
 #include "aac_parser.h"
 
 #include "mp4ff.h"
@@ -294,8 +295,9 @@ aac_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
     aac_info_t *info = (aac_info_t *)_info;
 
     deadbeef->pl_lock ();
-    info->file = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+    const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    info->file = deadbeef->fopen (uri);
     if (!info->file) {
         return -1;
     }
@@ -407,9 +409,6 @@ aac_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
         }
         trace ("found aac stream (junk: %d, offs: %d)\n", info->junk, offs);
 
-        _info->fmt.channels = channels;
-        _info->fmt.samplerate = samplerate;
-
         trace ("NeAACDecOpen for raw stream\n");
         info->dec = NeAACDecOpen ();
 
@@ -452,11 +451,11 @@ aac_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
     }
 
     char s[100];
-    deadbeef->pl_add_meta (it, ":BPS", "16");
-    snprintf (s, sizeof (s), "%d", channels);
-    deadbeef->pl_add_meta (it, ":CHANNELS", s);
-    snprintf (s, sizeof (s), "%d", samplerate);
-    deadbeef->pl_add_meta (it, ":SAMPLERATE", s);
+    deadbeef->pl_replace_meta (it, ":BPS", "16");
+    snprintf (s, sizeof (s), "%d", _info->fmt.channels);
+    deadbeef->pl_replace_meta (it, ":CHANNELS", s);
+    snprintf (s, sizeof (s), "%d", _info->fmt.samplerate);
+    deadbeef->pl_replace_meta (it, ":SAMPLERATE", s);
 
     trace ("totalsamples: %d, endsample: %d, samples-from-duration: %d, samplerate %d, channels %d\n", (int)totalsamples, (int)info->endsample, (int)deadbeef->pl_get_item_duration (it)*44100, _info->fmt.samplerate, _info->fmt.channels);
 
@@ -1007,6 +1006,7 @@ aac_insert (ddb_playlist_t *plt, DB_playItem_t *after, const char *fname) {
 
                     int64_t fsize = deadbeef->fgetlength (fp);
                     deadbeef->fclose (fp);
+                    fp = NULL;
 
                     char s[100];
                     snprintf (s, sizeof (s), "%lld", fsize);
@@ -1053,6 +1053,9 @@ aac_insert (ddb_playlist_t *plt, DB_playItem_t *after, const char *fname) {
                 }
             }
             mp4ff_close (mp4);
+            if (fp) {
+                deadbeef->fclose (fp);
+            }
             if (i < ntracks) {
                 return after;
             }

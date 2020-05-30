@@ -42,7 +42,6 @@ typedef struct {
     OggOpusFile *opusfile;
     uint8_t *channelmap;
 
-    int is_subtrack;
     int cur_bit_stream;
 
     int set_bitrate;
@@ -96,15 +95,16 @@ opus_file_open(DB_FILE *fp)
 
 static DB_fileinfo_t *
 opusdec_open (uint32_t hints) {
-    DB_fileinfo_t *_info = calloc (sizeof (opusdec_info_t), 1);
-    return _info;
+    opusdec_info_t *info = calloc (sizeof (opusdec_info_t), 1);
+    return &info->info;
 }
 
 static DB_fileinfo_t *
 opusdec_open2 (uint32_t hints, DB_playItem_t *it) {
     deadbeef->pl_lock ();
-    DB_FILE *fp = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+    const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    DB_FILE *fp = deadbeef->fopen (uri);
 
     if (!fp) {
         return NULL;
@@ -168,6 +168,7 @@ update_vorbis_comments (DB_playItem_t *it, OggOpusFile *opusfile, const int trac
             ) {
             // skip the ignored RG fields, and the picture
             if (_is_replaygain_tag (it, tag) || !strcasecmp (tag, "METADATA_BLOCK_PICTURE")) {
+                free (tag);
                 continue;
             }
             *value++ = '\0';
@@ -253,8 +254,9 @@ opusdec_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
 
     if (!info->info.file) {
         deadbeef->pl_lock ();
-        DB_FILE *fp = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+	const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
         deadbeef->pl_unlock ();
+        DB_FILE *fp = deadbeef->fopen (uri);
 
         if (!fp) {
             return -1;
@@ -313,7 +315,6 @@ opusdec_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
         opusdec_seek_sample (_info, 0);
     }
 
-    info->is_subtrack = deadbeef->pl_get_item_flags(it) & DDB_IS_SUBTRACK;
     deadbeef->pl_replace_meta (it, "!FILETYPE", "Ogg Opus");
     deadbeef->pl_set_meta_int (it, ":CHANNELS", head->channel_count);
 
@@ -400,8 +401,9 @@ opusdec_read (DB_fileinfo_t *_info, char *bytes, int size) {
 
     // Don't read past the end of a sub-track
     int samples_to_read = size / sizeof(float) / _info->fmt.channels;
-    if (info->is_subtrack) {
-        opus_int64 samples_left = deadbeef->pl_item_get_endsample (info->it) - op_pcm_tell (info->opusfile);
+    int64_t endsample = deadbeef->pl_item_get_endsample (info->it);
+    if (endsample > 0) {
+        opus_int64 samples_left = endsample - op_pcm_tell (info->opusfile);
         if (samples_left < samples_to_read) {
             samples_to_read = (int)samples_left;
             size = samples_to_read * sizeof(float) * _info->fmt.channels;
@@ -568,8 +570,9 @@ opusdec_read_metadata (DB_playItem_t *it) {
     const OpusHead *head = NULL;
 
     deadbeef->pl_lock ();
-    fp = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+    const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    fp = deadbeef->fopen (uri);
     if (!fp) {
         goto error;
     }
@@ -713,7 +716,10 @@ opusdec_write_metadata (DB_playItem_t *it) {
         split_tag (tags, oggedit_map_tag (strdupa ("R128_ALBUM_GAIN"), "meta2tag"), s, (int)strlen (s) + 1);
     }
 
-    int header_gain = (track_gain - 5.f) * 256;
+    int header_gain = 0;
+    if (track_gain_str) {
+        header_gain = (track_gain - 5.f) * 256;
+    }
 
     const char *stream_size_string = deadbeef->pl_find_meta(it, ":STREAM SIZE");
     const size_t stream_size = stream_size_string ? (off_t)atoll(stream_size_string) : 0;

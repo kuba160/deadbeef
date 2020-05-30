@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "../../strdupa.h"
 
 #define USE_MP4FF 1
 
@@ -107,10 +108,8 @@ typedef struct {
 // allocate codec control structure
 DB_fileinfo_t *
 alacplug_open (uint32_t hints) {
-    DB_fileinfo_t *_info = (DB_fileinfo_t *)malloc (sizeof (alacplug_info_t));
-    alacplug_info_t *info = (alacplug_info_t *)_info;
-    memset (info, 0, sizeof (alacplug_info_t));
-    return _info;
+    alacplug_info_t *info = calloc (sizeof (alacplug_info_t), 1);
+    return &info->info;
 }
 
 #if USE_MP4FF
@@ -226,8 +225,9 @@ alacplug_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
     alacplug_info_t *info = (alacplug_info_t *)_info;
 
     deadbeef->pl_lock ();
-    info->file = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+    const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    info->file = deadbeef->fopen (uri);
     if (!info->file) {
         return -1;
     }

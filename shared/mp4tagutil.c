@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include "mp4tagutil.h"
 #include "mp4ff.h"
+#include "../strdupa.h"
 
 #ifndef __linux__
 #define off64_t off_t
@@ -94,8 +95,9 @@ static const char *metainfo[] = {
 int
 mp4_write_metadata (DB_playItem_t *it) {
     deadbeef->pl_lock ();
-    DB_FILE *fp = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+    const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    DB_FILE *fp = deadbeef->fopen (uri);
 
     if (!fp) {
         return -1;
@@ -128,8 +130,9 @@ mp4_write_metadata (DB_playItem_t *it) {
     }
 
     deadbeef->pl_lock ();
-    int fd_out = open (deadbeef->pl_find_meta (it, ":URI"), O_LARGEFILE | O_RDWR);
+    uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    int fd_out = open (uri, O_LARGEFILE | O_RDWR);
 
     mp4ff_callback_t write_cb = {
         .read = stdio_read,
@@ -165,10 +168,10 @@ mp4_write_metadata (DB_playItem_t *it) {
     }
 
     static const char *tag_rg_names[] = {
-        "replaygain_album_gain",
-        "replaygain_album_peak",
-        "replaygain_track_gain",
-        "replaygain_track_peak",
+        "REPLAYGAIN_ALBUM_GAIN",
+        "REPLAYGAIN_ALBUM_PEAK",
+        "REPLAYGAIN_TRACK_GAIN",
+        "REPLAYGAIN_TRACK_PEAK",
         NULL
     };
 
@@ -186,7 +189,17 @@ mp4_write_metadata (DB_playItem_t *it) {
         if (deadbeef->pl_find_meta (it, ddb_internal_rg_keys[n])) {
             float value = deadbeef->pl_get_item_replaygain (it, n);
             char s[100];
-            snprintf (s, sizeof (s), "%f", value);
+            // https://wiki.hydrogenaud.io/index.php?title=ReplayGain_2.0_specification#Metadata_format
+            switch (n) {
+            case DDB_REPLAYGAIN_ALBUMGAIN:
+            case DDB_REPLAYGAIN_TRACKGAIN:
+                snprintf (s, sizeof (s), "%.2f dB", value);
+                break;
+            case DDB_REPLAYGAIN_ALBUMPEAK:
+            case DDB_REPLAYGAIN_TRACKPEAK:
+                snprintf (s, sizeof (s), "%.6f", value);
+                break;
+            }
             mp4ff_tag_add_field (&mp4->tags, tag_rg_names[n], s);
         }
     }
@@ -291,8 +304,9 @@ mp4_read_metadata_file (DB_playItem_t *it, DB_FILE *fp) {
 int
 mp4_read_metadata (DB_playItem_t *it) {
     deadbeef->pl_lock ();
-    DB_FILE *fp = deadbeef->fopen (deadbeef->pl_find_meta (it, ":URI"));
+    const char *uri = strdupa (deadbeef->pl_find_meta (it, ":URI"));
     deadbeef->pl_unlock ();
+    DB_FILE *fp = deadbeef->fopen (uri);
     if (!fp) {
         return -1;
     }
