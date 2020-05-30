@@ -1,0 +1,24 @@
+name: Doxygen build
+
+on: [push]
+
+
+jobs:
+  build_windows:
+    name: Doxygen build
+    runs-on: ubuntu-latest
+    steps:
+     - name: Checkout repository
+       uses: actions/checkout@v1
+     - name: Get Doxygen
+       run: sudo apt-get --yes --force-yes install doxygen
+     - name: Get prev docs
+       run: mkdir -p docs/html && git --work-tree=docs/html checkout origin/gh-pages -- . && git --work-tree=docs/html checkout gh-pages
+     - name: Compile documentation
+       run: DATE="`date \"+%Y-%m-%d\"`" && doxygen
+     - name: Commit changes
+       run: git --work-tree=docs/html add -A && git commit -m "$DATE"
+     - name: Push updated docs
+       run: git --work-tree=docs/html push --set-upstream origin gh-pages
+
+
