@@ -1,8 +1,8 @@
 echo Decrtypting id_rsa...
-openssl aes-256-cbc -K $encrypted_b1899526f957_key -iv $encrypted_b1899526f957_iv -in travis/id_rsa.enc -out travis/id_rsa -d || exit 1
-eval "$(ssh-agent -s)"
-chmod 600 travis/id_rsa
-ssh-add travis/id_rsa || exit 1
+# openssl aes-256-cbc -K $encrypted_b1899526f957_key -iv $encrypted_b1899526f957_iv -in travis/id_rsa.enc -out travis/id_rsa -d || exit 1
+# eval "$(ssh-agent -s)"
+# chmod 600 travis/id_rsa
+# ssh-add travis/id_rsa || exit 1
 
 SSHOPTS="ssh -o StrictHostKeyChecking=no"
 
@@ -28,4 +28,5 @@ case "$TRAVIS_OS_NAME" in
         rsync -e "$SSHOPTS" bin/deadbeef-$VERSION-windows-x86_64_DEBUG.zip waker,deadbeef@frs.sourceforge.net:/home/frs/project/d/de/deadbeef/travis/windows/$TRAVIS_BRANCH/ || exit 1
         rsync -e "$SSHOPTS" bin/deadbeef-$VERSION-windows-x86_64.exe waker,deadbeef@frs.sourceforge.net:/home/frs/project/d/de/deadbeef/travis/windows/$TRAVIS_BRANCH/ || exit 1
         rsync -e "$SSHOPTS" bin/deadbeef-$VERSION-windows-x86_64_DEBUG.exe waker,deadbeef@frs.sourceforge.net:/home/frs/project/d/de/deadbeef/travis/windows/$TRAVIS_BRANCH/ || exit 1
+        ps
 esac
