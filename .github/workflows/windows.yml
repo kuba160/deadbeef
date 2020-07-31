@@ -1,0 +1,49 @@
+name: Build for Windows
+
+on: [push]
+
+
+jobs:
+  build_windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+     - name: Checkout repository
+       uses: actions/checkout@v1
+     - name: Get sha_short
+       id: vars
+       run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+     - name: Install msys2
+       uses: numworks/setup-msys2@v1
+     # - name: Synchronize package databases
+     #  run: msys2do pacman -Sy --noconfirm pacman
+     #  continue-on-error: true
+     - name: Install necessary packages
+       run: msys2do pacman -S --noconfirm mingw-w64-x86_64-libzip mingw-w64-x86_64-pkg-config mingw-w64-x86_64-dlfcn mingw-w64-x86_64-gcc git make tar unzip xz
+     - name: Install plugin dependencies
+       run: msys2do pacman -S --noconfirm mingw-w64-x86_64-jansson mingw-w64-x86_64-gtk3 mingw-w64-x86_64-gtk2 mingw-w64-x86_64-mpg123 mingw-w64-x86_64-flac mingw-w64-x86_64-curl mingw-w64-x86_64-portaudio mingw-w64-x86_64-faad2 mingw-w64-x86_64-flac mingw-w64-x86_64-wavpack mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libogg mingw-w64-x86_64-opusfile mingw-w64-x86_64-opus mingw-w64-x86_64-libsndfile mingw-w64-x86_64-libsamplerate
+     - name: Prepare theme
+       run: msys2do git clone https://github.com/kuba160/Windows-10.git
+     - name: Remove .git from theme
+       run: msys2do rm -rv Windows-10/.git
+     - name: Prepare icons
+       run: msys2do git clone https://github.com/kuba160/Windows-10-Icons.git
+     - name: Remove .git from icons
+       run: msys2do rm -rv Windows-10-Icons/.git
+     - name: Initialize submodules
+       run: msys2do git submodule update --init external/mp4p
+     - name: Download premake5
+       run: msys2do wget https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-windows.zip && unzip premake-5.0.0-alpha14-windows.zip
+     - name: Run premake5 (debug)
+       run: msys2do ./premake5 --os=linux --file=premake5-win.lua --standard --debug-console gmake
+     - name: Build deadbeef with debugging symbols
+       run: msys2do make config=debug_windows
+     - name: Install theme
+       run: msys2do cp -r Windows-10 bin/debug/share/themes/Windows-10 && cp -r Windows-10 bin/release/share/themes/Windows-10
+     - name: Install icons
+       run: msys2do cp -r Windows-10-Icons bin/debug/share/icons/Windows-10-Icons && cp -r Windows-10-Icons bin/release/share/icons/Windows-10-Icons
+     - name: Upload artifact windows-debug-${{ steps.vars.outputs.sha_short }}.zip
+       uses: actions/upload-artifact@v1
+       with:
+         name: windows-debug-${{ steps.vars.outputs.sha_short }}
+         path: ./bin/debug/
