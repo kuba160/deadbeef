@@ -29,7 +29,7 @@ newoption {
 }
 
 if _OPTIONS["standard"] ~= nil then
-  plugins_to_disable = {"plugin-artwork", "plugin-converter", "plugin-converter_gtk2",
+  plugins_to_disable = {"plugin-converter", "plugin-converter_gtk2",
                         "plugin-converter_gtk3","plugin-ffmpeg","plugin-waveout",
                         "plugin-wildmidi", "plugin-soundtouch" }
   for i,v in ipairs(plugins_to_disable) do
@@ -1051,7 +1051,8 @@ project "artwork_plugin"
 
    files {
        "plugins/artwork-legacy/*.c",
-       "plugins/libmp4ff/*.c"
+       "shared/mp4tagutil.h",
+       "shared/mp4tagutil.c"
    }
 
    excludes {
@@ -1060,7 +1061,7 @@ project "artwork_plugin"
    includedirs { "../libmp4ff" }
 
    defines { "USE_OGG=1", "USE_VFS_CURL", "USE_METAFLAC", "USE_MP4FF", "USE_TAGGING=1" }
-   links { "jpeg", "png", "z", "FLAC", "ogg" }
+   links { "jpeg", "png", "z", "FLAC", "ogg", "mp4p" }
 end
 
 if option ("plugin-supereq") then
