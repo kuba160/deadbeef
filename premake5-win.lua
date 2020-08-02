@@ -176,6 +176,24 @@ project "mp3"
    end
 end
 
+local cdda_v = option ("plugin-cdda", "libcdio", "libcdio_paranoia")
+if cdda_v and cdda_v["libcdio"] then
+project "cdda"
+   kind "SharedLib"
+   language "C"
+   targetdir "bin/%{cfg.buildcfg}/plugins"
+   targetprefix ""
+
+   files {
+       "plugins/cdda/cdda.c"
+   }
+   pkgconfig ("libcdio libcddb")
+   if cdda_v["libcdio_paranoia"] then
+      -- defines { "USE_PARANOIA=1" }
+      -- pkgconfig ("libcdio_paranoia")
+   end
+end
+
 -- no pkgconfig for libfaad, do checking manually
 if _OPTIONS["plugin-aac"] == "auto" or _OPTIONS["plugin-aac"] == nil then
   -- hard-coded :(
