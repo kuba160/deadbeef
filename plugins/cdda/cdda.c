@@ -903,6 +903,12 @@ cda_action_add_cd (DB_plugin_action_t *act, int ctx)
         if (plt) {
             char path[strlen(drive_device) + sizeof(CDDA_ALL_TRACKS) + 1];
             sprintf(path, "%s/%s", drive_device, CDDA_ALL_TRACKS);
+            #ifdef __MINGW32__
+            sprintf(path, "%s/Track01.cda", drive_device);
+            if (path[0] == '\\' && path[1] == '\\' && path[2] == '.') {
+                path[2] = '?';
+            }
+            #endif
             deadbeef->plt_add_files_begin(plt, 0);
             deadbeef->plt_add_file2(0, plt, path, NULL, NULL);
             deadbeef->plt_add_files_end(plt, 0);
