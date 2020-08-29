@@ -560,10 +560,12 @@ end
 if option ("plugin-portaudio", "portaudio-2.0") then
 project "portaudio"
    kind "SharedLib"
-   language "C"
+   language "C++"
    targetdir "bin/%{cfg.buildcfg}/plugins"
    targetprefix ""
-
+   linkoptions "-Wl,-Bstatic"
+   links {"stdc++"}
+   linkoptions "-Wl,-Bdynamic"
    files {
        "plugins/portaudio/*.h",
        "plugins/portaudio/*.c",
