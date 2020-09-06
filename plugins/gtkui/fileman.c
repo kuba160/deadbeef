@@ -325,6 +325,7 @@ set_file_filter (GtkFileChooser *dlg, const char *name) {
     for (int i = 0; codecs[i]; i++) {
         if (codecs[i]->exts && codecs[i]->insert) {
             const char **exts = codecs[i]->exts;
+            char buf[100];
             for (int e = 0; exts[e]; e++) {
                 snprintf (buf, sizeof (buf), "*.%s", exts[e]);
                 gtk_file_filter_add_pattern (flt, buf);
