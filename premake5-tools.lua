@@ -65,6 +65,12 @@ function pkgconfig_libs (pkgname)
   tab2 = {}
   for i, v in ipairs(parts) do
     tab2[i] = string.sub (v, 3)
+	if (pkgname == "libzip") then
+		print ("fulloutput: " .. returnval)
+  		print ("libzip: string " .. v)
+  		print ("libzip: subst " .. tab2[i])
+  		print ("libzip: final " .. tab2[i] .. " ")
+  	end
     tab2[i] = tab2[i] .. " " -- fix problems when project name is same as library
     -- this will favor linking with library than with itself
   end
