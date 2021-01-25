@@ -1,0 +1,27 @@
+name: Build for Linux
+on: [push]
+jobs:
+  build_linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    container: ubuntu:14.04
+    steps:
+    - name: Install necessary packages
+      run: |
+        apt-get update
+        apt-get install --yes autopoint automake autoconf intltool libc6-dev yasm libglib2.0-bin fakeroot clang libblocksruntime-dev libdispatch-dev
+        apt-get install --yes wget automake libtool m4 pkg-config make
+    - name: Checkout repository
+      uses: actions/checkout@v1
+      with:
+        submodules: recursive
+    - name: Run ./travis/build.sh
+      shell: bash {0}
+      run: |
+        export TRAVIS_OS_NAME=linux
+        source ./travis/build.sh
+    - name: Run ./travis/upload.sh
+      shell: bash {0}
+      run: |
+        export TRAVIS_OS_NAME=linux
+        source ./travis/upload.sh

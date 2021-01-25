@@ -1,7 +1,5 @@
 name: Build for Windows
-
 on: [push]
-
 jobs:
   build_windows:
     name: Windows
@@ -11,9 +9,6 @@ jobs:
       uses: actions/checkout@v1
       with:
         submodules: recursive
-    - name: Get sha_short
-      id: vars
-      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
     - name: Install msys2
       uses: msys2/setup-msys2@v2
       with:
@@ -30,8 +25,8 @@ jobs:
       run: |
         export TRAVIS_OS_NAME=windows
         source ./travis/build.sh
-    - name: Upload artifact windows-debug-${{ steps.vars.outputs.sha_short }}.zip
-      uses: actions/upload-artifact@v1
-      with:
-        name: windows-debug-${{ steps.vars.outputs.sha_short }}
-        path: ./bin/debug/
+    - name: Run ./travis/upload.sh
+      shell: msys2 {0}
+      run: |
+        export TRAVIS_OS_NAME=windows
+        source ./travis/upload.sh
