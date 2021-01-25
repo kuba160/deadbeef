@@ -1,23 +1,26 @@
+
+set -x
 echo Decrypting id_rsa...
 
 mkdir -p sshconfig
 
 if [ ! -z $gh_rsa_key ]; then
-    openssl enc -aes-256-cbc -K $gh_rsa_key -iv $gh_rsa_iv -in .github/id_rsa.enc -out sshconfig/id_rsa -d || exit 1
+    openssl enc -aes-256-cbc -K $gh_rsa_key -iv $gh_rsa_iv -in .github/id_rsa.enc -out sshconfig/id_rsa -d
 elif [ ! -z $encrypted_b1899526f957_key ]; then
-    openssl aes-256-cbc -K $encrypted_b1899526f957_key -iv $encrypted_b1899526f957_iv -in travis/id_rsa.enc -out sshconfig/id_rsa -d || exit 1
+    openssl aes-256-cbc -K $encrypted_b1899526f957_key -iv $encrypted_b1899526f957_iv -in travis/id_rsa.enc -out sshconfig/id_rsa -d
 else
     echo "Can't decrypt ssh key"
-    exit 1
+
 fi
 
 eval "$(ssh-agent -s)"
 chmod 600 sshconfig/id_rsa
-ssh-add sshconfig/id_rsa || exit 1
+ssh-add sshconfig/id_rsa 
 
 SSHOPTS="ssh -o StrictHostKeyChecking=no"
 
 VERSION=`cat PORTABLE_VERSION | perl -ne 'chomp and print'`
+echo $VERSION
 
 if [ ! -z $GITHUB_REF ]; then
     TRAVIS_BRANCH=${GITHUB_REF#"refs/heads/"}
