@@ -19,7 +19,7 @@ ssh-add sshconfig/id_rsa
 
 SSHOPTS="ssh -o StrictHostKeyChecking=no"
 
-VERSION=`cat PORTABLE_VERSION | perl -ne 'chomp and print'`
+VERSION=`cat PORTABLE_VERSION | perl -ne 's/[\r\n]//g and print'`
 echo $VERSION
 
 if [ ! -z $GITHUB_REF ]; then
