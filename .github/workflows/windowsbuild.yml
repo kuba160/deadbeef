@@ -27,5 +27,5 @@ jobs:
       env:
           gh_rsa_key: ${{ secrets.GH_ENCRYPTED_RSA_KEY }}
           gh_rsa_iv: ${{ secrets.GH_ENCRYPTED_RSA_IV }}
-      shell: msys2 {0}
+      shell: bash {0}
       run: TRAVIS_OS_NAME=windows travis/upload.sh
