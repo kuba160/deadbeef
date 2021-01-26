@@ -17,7 +17,7 @@ ssh-add sshconfig/id_rsa || exit 1
 
 SSHOPTS="ssh -o StrictHostKeyChecking=no"
 
-VERSION=`cat PORTABLE_VERSION | perl -ne 'chomp and print'`
+VERSION=`cat PORTABLE_VERSION | perl -ne 's/\R//g and print'`
 
 if [ ! -z $GITHUB_REF ]; then
     TRAVIS_BRANCH=${GITHUB_REF#"refs/heads/"}
