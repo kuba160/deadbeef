@@ -29,3 +29,7 @@ jobs:
           gh_rsa_iv: ${{ secrets.GH_ENCRYPTED_RSA_IV }}
       shell: msys2 {0}
       run: TRAVIS_OS_NAME=windows travis/upload.sh
+    - uses: actions/upload-artifact@v2
+      with:
+      name: deadbeef-debug.zip
+      path: bin/deadbeef-devel-windows-x86_64_DEBUG.zip
