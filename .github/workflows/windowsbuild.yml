@@ -31,5 +31,4 @@ jobs:
       run: TRAVIS_OS_NAME=windows travis/upload.sh
     - uses: actions/upload-artifact@v2
       with:
-      name: deadbeef-debug.zip
-      path: bin/deadbeef-devel-windows-x86_64_DEBUG.zip
+        path: bin/deadbeef-devel-windows-x86_64_DEBUG.zip
