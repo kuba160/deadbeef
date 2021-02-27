@@ -723,7 +723,7 @@ on_pref_pluginlist_cursor_changed      (GtkTreeView     *treeview,
         GtkWidget *box = gtk_vbox_new(FALSE, 0);
         gtk_widget_show (box);
         gtkui_make_dialog (NULL, box, &conf);
-        gtk_widget_set_size_request(box, 200, -1);
+        //gtk_widget_set_size_request(box, 200, -1);
         gtk_container_add (GTK_CONTAINER (container), box);
     }
 }
