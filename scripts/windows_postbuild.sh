@@ -31,7 +31,7 @@ done
 cp -uv translation/help.ru.txt  "$1/doc/"
 
 # Libraries
-ldd bin/debug/plugins/* | grep -iv "System32" | grep -iv "WinSxS" | grep -iv "ConEmu"
+ldd "$1/plugins/"*.dll | grep -iv "System32" | grep -iv "WinSxS" | grep -iv "ConEmu"
 
 ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
 									 | grep -iv "???" \
