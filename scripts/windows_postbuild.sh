@@ -30,8 +30,10 @@ for i in po/*.gmo ; do
 done
 cp -uv translation/help.ru.txt  "$1/doc/"
 
-# Libraries
+ls /mingw64/bin/lib*.dll
+ldd /mingw64/bin/libcurl-4.dll
 
+# Libraries
 ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
 									 | grep -iv "???" \
 									 | grep -iv "System32" \
@@ -41,17 +43,6 @@ ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {pri
 									 | sort -u > .libraries.tmp
 
 cp -uv `cat .libraries.tmp` "$1/"
-
-# Libraries of libraries :)
-ldd "$1/"*.dll | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
-			   | grep -iv "???" \
-			   | grep -iv "System32" \
-			   | grep -iv "WinSxS" \
-			   | grep -iv "ConEmu" \
-			   | grep -iv "`readlink -f \"$1\"`" \
-			   | sort -u > .libraries.tmp
-
-cp -uv `cat .libraries.tmp` "$1/" | true
 
 # libdispatch
 cp -uv xdispatch_ddb/lib/*.dll "$1/"
