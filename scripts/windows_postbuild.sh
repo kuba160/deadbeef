@@ -30,9 +30,35 @@ for i in po/*.gmo ; do
 done
 cp -uv translation/help.ru.txt  "$1/doc/"
 
-ls /mingw64/bin/lib*.dll
-ldd /mingw64/bin/libcurl-4.dll
-
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe"
+echo ===========================
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}'
+echo ===========================
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
+									 | grep -iv "???"
+echo ===========================
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
+									 | grep -iv "???" \
+									 | grep -iv "System32"
+echo ===========================
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
+									 | grep -iv "???" \
+									 | grep -iv "System32" \
+									 | grep -iv "WinSxS"
+echo ===========================
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
+									 | grep -iv "???" \
+									 | grep -iv "System32" \
+									 | grep -iv "WinSxS" \
+									 | grep -iv "ConEmu"
+echo ===========================
+ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
+									 | grep -iv "???" \
+									 | grep -iv "System32" \
+									 | grep -iv "WinSxS" \
+									 | grep -iv "ConEmu" \
+									 | grep -iv "`readlink -f \"$1\"`"
+echo ===========================
 # Libraries
 ldd "$1/plugins/"*.dll "$1/deadbeef.exe" | awk 'NF == 4 {print $3}; NF == 2 {print $1}' \
 									 | grep -iv "???" \
