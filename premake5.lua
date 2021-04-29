@@ -1091,7 +1091,7 @@ project "musepack_plugin"
   links {"m"}
 end
 
-if option ("plugin-artwork", "libjpeg libpng zlib flac ogg") then
+if option ("plugin-artwork-legacy", "libjpeg libpng zlib flac ogg") then
 project "artwork_plugin"
   targetname "artwork"
   files {
@@ -1101,6 +1101,17 @@ project "artwork_plugin"
   includedirs {"../libmp4ff"}
   defines {"USE_OGG=1", "USE_VFS_CURL", "USE_METAFLAC", "USE_MP4FF", "USE_TAGGING=1"}
   links {"jpeg", "png", "z", "FLAC", "ogg", "mp4p"}
+elseif option ("plugin-artwork", "libjpeg libpng zlib flac ogg") then
+project "artwork_plugin"
+  targetname "artwork"
+  files {
+    "plugins/artwork/*.c",
+    "shared/mp4tagutil.c"
+  }
+  includedirs {"../libmp4ff", "./shared"}
+  buildoptions {"-fblocks"}
+  defines {"USE_OGG=1", "USE_VFS_CURL", "USE_METAFLAC", "USE_MP4FF", "USE_TAGGING=1"}
+  links {"jpeg", "png", "z", "FLAC", "ogg", "mp4p", "dispatch", "BlocksRuntime"}
 end
 
 if option ("plugin-supereq") then
