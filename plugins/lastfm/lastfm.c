@@ -69,7 +69,7 @@ static dispatch_queue_t request_queue;
 #define META_FIELD_SIZE 200
 
 DB_plugin_t *
-lastfm_load (DB_functions_t *api) {
+lastfm2_load (DB_functions_t *api) {
     deadbeef = api;
     return DB_PLUGIN (&plugin);
 }
@@ -88,8 +88,8 @@ lfm_send_nowplaying (const char *lfm_nowplaying);
 static void
 lfm_update_auth (void) {
     deadbeef->conf_lock ();
-    const char *user = deadbeef->conf_get_str_fast ("lastfm.login", "");
-    const char *pass = deadbeef->conf_get_str_fast ("lastfm.password", "");
+    const char *user = deadbeef->conf_get_str_fast ("lastfm2.login", "");
+    const char *pass = deadbeef->conf_get_str_fast ("lastfm2.password", "");
     if (strcmp (user, lfm_user) || strcmp (pass, lfm_pass)) {
         strcpy (lfm_user, user);
         strcpy (lfm_pass, pass);
@@ -239,7 +239,7 @@ auth (void) {
     deadbeef->md5_to_str (token, sig);
 
     deadbeef->conf_lock ();
-    const char *scrobbler_url = deadbeef->conf_get_str_fast ("lastfm.scrobbler_url", SCROBBLER_URL_LFM);
+    const char *scrobbler_url = deadbeef->conf_get_str_fast ("lastfm2.scrobbler_url", SCROBBLER_URL_LFM);
 #if LFM_TESTMODE
     snprintf (req, sizeof (req), "%s/?hs=true&p=1.2.1&c=tst&v=1.0&u=%s&t=%d&a=%s", scrobbler_url, lfm_user, (int)timestamp, token);
 #else
@@ -340,7 +340,7 @@ fail:
 
 static int
 lfm_fetch_song_info (DB_playItem_t *song, float playtime, char *a, char *t, char *b, float *l, char *n, char *m) {
-    if (deadbeef->conf_get_int ("lastfm.prefer_album_artist", 0)) {
+    if (deadbeef->conf_get_int ("lastfm2.prefer_album_artist", 0)) {
         if (!deadbeef->pl_get_meta_with_override (song, "band", a, META_FIELD_SIZE)) {
             if (!deadbeef->pl_get_meta_with_override (song, "album artist", a, META_FIELD_SIZE)) {
                 if (!deadbeef->pl_get_meta_with_override (song, "albumartist", a, META_FIELD_SIZE)) {
@@ -372,13 +372,13 @@ lfm_fetch_song_info (DB_playItem_t *song, float playtime, char *a, char *t, char
     if (*l <= 0) {
         *l = playtime;
     }
-    if (*l < 30 && deadbeef->conf_get_int ("lastfm.submit_tiny_tracks", 0)) {
+    if (*l < 30 && deadbeef->conf_get_int ("lastfm2.submit_tiny_tracks", 0)) {
         *l = 30;
     }
     if (!deadbeef->pl_get_meta_with_override (song, "track", n, META_FIELD_SIZE)) {
         *n = 0;
     }
-    if (!deadbeef->conf_get_int ("lastfm.mbid", 0) || !deadbeef->pl_get_meta_with_override (song, "musicbrainz_trackid", m, META_FIELD_SIZE)) {
+    if (!deadbeef->conf_get_int ("lastfm2.mbid", 0) || !deadbeef->pl_get_meta_with_override (song, "musicbrainz_trackid", m, META_FIELD_SIZE)) {
         *m = 0;
     }
     return 0;
@@ -537,7 +537,7 @@ lfm_format_uri (int subm, DB_playItem_t *song, char *out, int outl, time_t start
 static int
 lastfm_songstarted (ddb_event_track_t *ev, uintptr_t data) {
     trace ("lfm songstarted %p\n", ev->track);
-    if (!deadbeef->conf_get_int ("lastfm.enable", 0)) {
+    if (!deadbeef->conf_get_int ("lastfm2.enable", 0)) {
         return 0;
     }
 
@@ -556,7 +556,7 @@ lastfm_songstarted (ddb_event_track_t *ev, uintptr_t data) {
         char lfm_nowplaying[2048];
         if (lfm_format_uri (-1, it, lfm_nowplaying, sizeof (lfm_nowplaying), started_timestamp, 120) > 0) {
             // try to send nowplaying
-            if (lfm_nowplaying[0] && !deadbeef->conf_get_int ("lastfm.disable_np", 0)) {
+            if (lfm_nowplaying[0] && !deadbeef->conf_get_int ("lastfm2.disable_np", 0)) {
                 lfm_send_nowplaying (lfm_nowplaying);
             }
         }
@@ -567,7 +567,7 @@ lastfm_songstarted (ddb_event_track_t *ev, uintptr_t data) {
 
 static int
 lastfm_songchanged (ddb_event_trackchange_t *ev, uintptr_t data) {
-    if (!deadbeef->conf_get_int ("lastfm.enable", 0)) {
+    if (!deadbeef->conf_get_int ("lastfm2.enable", 0)) {
         return 0;
     }
     // previous track must exist
@@ -582,7 +582,7 @@ lastfm_songchanged (ddb_event_trackchange_t *ev, uintptr_t data) {
     if (dur < 30 && ev->playtime < 30) {
         // the lastfm.send_tiny_tracks option can override this rule
         // only if the track played fully, and has determined duration
-        if (!(dur > 0 && fabs (ev->playtime - dur) < 1.f && deadbeef->conf_get_int ("lastfm.submit_tiny_tracks", 0))) {
+        if (!(dur > 0 && fabs (ev->playtime - dur) < 1.f && deadbeef->conf_get_int ("lastfm2.submit_tiny_tracks", 0))) {
             trace ("track duration is %f sec, playtime if %f sec. not eligible for submission\n", dur, ev->playtime);
             return 0;
         }
@@ -729,7 +729,7 @@ lfm_submit (ddb_playItem_t *it, time_t started_timestamp, float playtime) {
         return;
     }
 
-    if (!deadbeef->conf_get_int ("lastfm.enable", 0)) {
+    if (!deadbeef->conf_get_int ("lastfm2.enable", 0)) {
         deadbeef->pl_item_unref (it);
         return;
     }
@@ -866,14 +866,14 @@ lfm_get_actions (DB_playItem_t *it)
 }
 
 static const char settings_dlg[] =
-    "property \"Enable scrobbler\" checkbox lastfm.enable 0;"
-    "property \"Disable nowplaying\" checkbox lastfm.disable_np 0;"
-    "property Username entry lastfm.login \"\";\n"
-    "property Password password lastfm.password \"\";"
-    "property \"Scrobble URL\" entry lastfm.scrobbler_url \""SCROBBLER_URL_LFM"\";"
-    "property \"Prefer Album Artist over Artist field\" checkbox lastfm.prefer_album_artist 0;"
-    "property \"Send MusicBrainz ID\" checkbox lastfm.mbid 0;"
-    "property \"Submit tracks shorter than 30 seconds (not recommended)\" checkbox lastfm.submit_tiny_tracks 0;"
+    "property \"Enable scrobbler\" checkbox lastfm2.enable 0;"
+    "property \"Disable nowplaying\" checkbox lastfm2.disable_np 0;"
+    "property Username entry lastfm2.login \"\";\n"
+    "property Password password lastfm2.password \"\";"
+    "property \"Scrobble URL\" entry lastfm2.scrobbler_url \""SCROBBLER_URL_LFM"\";"
+    "property \"Prefer Album Artist over Artist field\" checkbox lastfm2.prefer_album_artist 0;"
+    "property \"Send MusicBrainz ID\" checkbox lastfm2.mbid 0;"
+    "property \"Submit tracks shorter than 30 seconds (not recommended)\" checkbox lastfm2.submit_tiny_tracks 0;"
 ;
 
 // define plugin interface
@@ -883,7 +883,7 @@ static DB_misc_t plugin = {
     .plugin.version_minor = 0,
     .plugin.type = DB_PLUGIN_MISC,
 //    .plugin.flags = DDB_PLUGIN_FLAG_LOGGING,
-    .plugin.name = "last.fm scrobbler",
+    .plugin.name = "last.fm scrobbler (2)",
     .plugin.descr = "Sends played songs information to your last.fm account, or other service that use AudioScrobbler protocol",
     .plugin.copyright =
         "Last.fm scrobbler plugin for DeaDBeeF Player\n"
